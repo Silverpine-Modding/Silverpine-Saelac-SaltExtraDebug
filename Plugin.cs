@@ -17,7 +17,7 @@ public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "salt.silverpine.extradebug";
     public const string PluginName = "Salt Extra Debug";
-    public const string PluginVersion = "0.21.0";
+    public const string PluginVersion = "0.22.0";
 
     internal static ConfigEntry<bool> FreeBuildEnabled;
     internal static ConfigEntry<bool> GodModeEnabled;
@@ -1001,6 +1001,11 @@ internal static class AddCheatButtonsPatch
             "Force NPC Daily Reset",
             ForceNpcDailyReset
         );
+        AddAction(
+            contentRoot,
+            "Duplicate Inventory Item",
+            StartDuplicateInventoryItem
+        );
         AddCloseButton(contentRoot);
     }
 
@@ -1073,6 +1078,71 @@ internal static class AddCheatButtonsPatch
                 npc.OnNewDay(0);
             }
         }
+    }
+
+    private static void StartDuplicateInventoryItem()
+    {
+        if (Player.Instance == null
+            || Player.Instance.worldInventory == null
+            || InventoryUI.Instance == null)
+        {
+            return;
+        }
+
+        Inventory inventory = Player.Instance.worldInventory.inventory;
+        if (inventory == null || inventory.GetItemCount() == 0)
+        {
+            UpperNotificationUI.Instance.OneOff(
+                "There are no inventory items to duplicate."
+            );
+            return;
+        }
+
+        InventoryUI.Instance.StartSelectionMode(
+            item => item != null,
+            delegate(Item selectedItem)
+            {
+                if (selectedItem == null)
+                {
+                    return;
+                }
+
+                Item duplicate = selectedItem.DeepClone();
+                bool originalAllowEncumbered = inventory.allowEncumbered;
+                int originalMaxItems = inventory.maxItems;
+
+                try
+                {
+                    // A debug duplication action should not silently fail just
+                    // because the inventory is already at its normal limit.
+                    inventory.allowEncumbered = true;
+                    inventory.maxItems = int.MaxValue;
+
+                    if (!inventory.TryAddItem(duplicate))
+                    {
+                        UpperNotificationUI.Instance.OneOff(
+                            "Could not duplicate "
+                            + selectedItem.GetFinalName() + "."
+                        );
+                        return;
+                    }
+                }
+                finally
+                {
+                    inventory.allowEncumbered = originalAllowEncumbered;
+                    inventory.maxItems = originalMaxItems;
+                    inventory.UpdateEncumbered();
+                }
+
+                AnimationHelper.Instance.SpawnItemFloatingText(
+                    duplicate,
+                    Player.Instance.transform
+                );
+                UpperNotificationUI.Instance.OneOff(
+                    "Duplicated " + duplicate.GetFinalName() + "."
+                );
+            }
+        );
     }
 
     private static void AddCloseButton(GameObject contentRoot)
