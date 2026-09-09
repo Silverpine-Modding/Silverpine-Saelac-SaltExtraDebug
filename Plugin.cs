@@ -17,7 +17,7 @@ public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "salt.silverpine.extradebug";
     public const string PluginName = "Salt Extra Debug";
-    public const string PluginVersion = "0.22.0";
+    public const string PluginVersion = "0.25.0";
 
     internal static ConfigEntry<bool> FreeBuildEnabled;
     internal static ConfigEntry<bool> GodModeEnabled;
@@ -27,6 +27,7 @@ public class Plugin : BaseUnityPlugin
     internal static ConfigEntry<bool> InfiniteEnergyEnabled;
     internal static ConfigEntry<bool> BlockNegativeStatusEffects;
     internal static ConfigEntry<bool> AllowNpcTalkInCombat;
+    internal static ConfigEntry<bool> ShowNpcPropertyBoundaries;
     private Harmony _harmony;
 
     private void Awake()
@@ -79,9 +80,333 @@ public class Plugin : BaseUnityPlugin
             false,
             "Allows the player to start NPC dialogue while in combat."
         );
+        ShowNpcPropertyBoundaries = Config.Bind(
+            "Debug Overlays",
+            "ShowNpcPropertyBoundaries",
+            false,
+            "Shows color-coded NPC property boundaries in the world."
+        );
 
         _harmony = new Harmony(PluginGuid);
         _harmony.PatchAll();
+        // Silverpine destroys the BepInEx startup host. Runtime components
+        // belong to gameplay objects; static Harmony patches survive bootstrap.
+    }
+}
+
+internal sealed class NpcPropertyBoundaryOverlay : MonoBehaviour
+{
+    private const float RefreshInterval = 0.5f;
+    private const float LineWidth = 0.09f;
+    private const float SharedOwnerInset = 0.12f;
+    private const int OverlaySortingOrder = 32000;
+    private const float LabelPixelHeight = 24f;
+
+    private sealed class OwnerLabel
+    {
+        internal TextMeshPro Text;
+        internal Vector3 Anchor;
+        internal int SharedOwnerIndex;
+        internal float MeshHeight;
+    }
+
+    private GameObject _root;
+    private Material _lineMaterial;
+    private readonly List<OwnerLabel> _labels = new();
+    private float _refreshTimer;
+    private int _lastSignature = int.MinValue;
+
+    internal void RefreshNow()
+    {
+        _refreshTimer = 0f;
+    }
+
+    private void LateUpdate()
+    {
+        Camera camera = Camera.main;
+        if (_root == null || camera == null || !camera.orthographic)
+        {
+            return;
+        }
+
+        float height = DebugViewMath.WorldHeightForPixels(
+            LabelPixelHeight, camera.orthographicSize, camera.pixelHeight);
+        foreach (OwnerLabel label in _labels)
+        {
+            if (label.Text == null)
+            {
+                continue;
+            }
+            label.Text.transform.localScale = Vector3.one * (height / label.MeshHeight);
+            label.Text.transform.position = label.Anchor
+                + Vector3.down * (label.SharedOwnerIndex * height * 1.3f);
+        }
+    }
+
+    private void Update()
+    {
+        if (Player.Instance == null || gameObject != Player.Instance.gameObject
+            || Plugin.ShowNpcPropertyBoundaries == null
+            || !Plugin.ShowNpcPropertyBoundaries.Value)
+        {
+            ClearOverlay();
+            return;
+        }
+
+        _refreshTimer -= Time.unscaledDeltaTime;
+        if (_refreshTimer > 0f)
+        {
+            return;
+        }
+
+        _refreshTimer = RefreshInterval;
+        Plot[] plots = Plot.allPlots
+            .Where(plot => plot != null)
+            .ToArray();
+        int signature = GetPlotSignature(plots);
+
+        if (_root == null || signature != _lastSignature)
+        {
+            RebuildOverlay(plots);
+            _lastSignature = signature;
+        }
+    }
+
+    private void RebuildOverlay(IEnumerable<Plot> plots)
+    {
+        ClearOverlay();
+
+        _root = new GameObject("SaltExtraDebug_NpcPropertyBoundaries");
+        _root.hideFlags = HideFlags.DontSave;
+        // The controller is on Player, but the geometry must stay in world
+        // coordinates. Parenting labels to Player would move/scale the plots
+        // whenever the player walks or a sprite-scaling mod changes their size.
+
+        foreach (Plot plot in plots
+            .OrderBy(value => value.bounds.xMin)
+            .ThenBy(value => value.bounds.yMin))
+        {
+            if (plot.owners == null)
+            {
+                continue;
+            }
+
+            List<NPCName> owners = plot.owners
+                .Where(owner => owner != NPCName.None)
+                .Distinct()
+                .OrderBy(owner => (int)owner)
+                .ToList();
+
+            for (int index = 0; index < owners.Count; index++)
+            {
+                NPCName owner = owners[index];
+                Color color = GetOwnerColor(owner);
+                AddBoundary(plot.bounds, owner, color, index);
+                AddOwnerLabel(plot.bounds, owner, color, index);
+            }
+        }
+    }
+
+    private void AddBoundary(
+        BoundsInt bounds,
+        NPCName owner,
+        Color color,
+        int sharedOwnerIndex)
+    {
+        if (bounds.size.x <= 0 || bounds.size.y <= 0)
+        {
+            return;
+        }
+
+        float maximumInset = Mathf.Max(
+            0f,
+            Mathf.Min(bounds.size.x, bounds.size.y) * 0.5f - 0.1f
+        );
+        float inset = Mathf.Min(
+            sharedOwnerIndex * SharedOwnerInset,
+            maximumInset
+        );
+
+        float left = bounds.xMin - 0.5f + inset;
+        float right = bounds.xMax - 0.5f - inset;
+        float bottom = bounds.yMin - 0.5f + inset;
+        float top = bounds.yMax - 0.5f - inset;
+        const float z = -0.15f;
+
+        var lineObject = new GameObject(
+            "PropertyBoundary_" + owner,
+            typeof(LineRenderer)
+        );
+        lineObject.hideFlags = HideFlags.DontSave;
+        lineObject.transform.SetParent(_root.transform, false);
+
+        LineRenderer line = lineObject.GetComponent<LineRenderer>();
+        line.useWorldSpace = true;
+        line.loop = true;
+        line.positionCount = 4;
+        line.startWidth = LineWidth;
+        line.endWidth = LineWidth;
+        line.startColor = color;
+        line.endColor = color;
+        line.numCapVertices = 2;
+        line.numCornerVertices = 2;
+        line.sortingLayerName = "Characters";
+        line.sortingOrder = OverlaySortingOrder;
+
+        Material material = GetLineMaterial();
+        if (material != null)
+        {
+            line.sharedMaterial = material;
+        }
+
+        line.SetPosition(0, new Vector3(left, bottom, z));
+        line.SetPosition(1, new Vector3(right, bottom, z));
+        line.SetPosition(2, new Vector3(right, top, z));
+        line.SetPosition(3, new Vector3(left, top, z));
+    }
+
+    private void AddOwnerLabel(
+        BoundsInt bounds,
+        NPCName owner,
+        Color color,
+        int sharedOwnerIndex)
+    {
+        var labelObject = new GameObject(
+            "PropertyLabel_" + owner,
+            typeof(TextMeshPro)
+        );
+        labelObject.hideFlags = HideFlags.DontSave;
+        labelObject.transform.SetParent(_root.transform, false);
+        labelObject.transform.position = new Vector3(
+            bounds.xMin - 0.45f,
+            bounds.yMax - 0.35f,
+            -0.16f
+        );
+
+        TextMeshPro label = labelObject.GetComponent<TextMeshPro>();
+        label.text = GetOwnerDisplayName(owner);
+        label.fontSize = 36f;
+        label.color = color;
+        label.alignment = TextAlignmentOptions.TopLeft;
+        label.enableWordWrapping = false;
+        label.outlineColor = new Color(0f, 0f, 0f, 0.9f);
+        label.outlineWidth = 0.18f;
+
+        RectTransform rect = label.rectTransform;
+        rect.pivot = new Vector2(0f, 1f);
+        rect.sizeDelta = new Vector2(100f, 8f);
+        label.ForceMeshUpdate();
+        _labels.Add(new OwnerLabel
+        {
+            Text = label,
+            Anchor = labelObject.transform.position,
+            SharedOwnerIndex = sharedOwnerIndex,
+            MeshHeight = Mathf.Max(0.1f, label.textBounds.size.y)
+        });
+
+        Renderer renderer = label.GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            renderer.sortingLayerName = "Characters";
+            renderer.sortingOrder = OverlaySortingOrder + 1;
+        }
+    }
+
+    private Material GetLineMaterial()
+    {
+        if (_lineMaterial != null)
+        {
+            return _lineMaterial;
+        }
+
+        Shader shader = Shader.Find("Sprites/Default")
+            ?? Shader.Find("Hidden/Internal-Colored");
+        if (shader == null)
+        {
+            return null;
+        }
+
+        _lineMaterial = new Material(shader)
+        {
+            name = "SaltExtraDebug_PropertyBoundaryMaterial",
+            hideFlags = HideFlags.DontSave
+        };
+        return _lineMaterial;
+    }
+
+    private static Color GetOwnerColor(NPCName owner)
+    {
+        float hue = Mathf.Repeat(
+            0.11f + (int)owner * 0.61803398875f,
+            1f
+        );
+        Color color = Color.HSVToRGB(hue, 0.78f, 1f);
+        color.a = 0.95f;
+        return color;
+    }
+
+    private static string GetOwnerDisplayName(NPCName owner)
+    {
+        if (NeuralNPC.neuralNPCs.TryGetValue(owner, out NeuralNPC npc)
+            && npc != null)
+        {
+            return npc.GetFinalName();
+        }
+
+        return owner.ToString();
+    }
+
+    private static int GetPlotSignature(IEnumerable<Plot> plots)
+    {
+        unchecked
+        {
+            int signature = 17;
+            foreach (Plot plot in plots.OrderBy(value => value.GetInstanceID()))
+            {
+                signature = signature * 31 + plot.GetInstanceID();
+                signature = signature * 31 + plot.bounds.position.GetHashCode();
+                signature = signature * 31 + plot.bounds.size.GetHashCode();
+
+                if (plot.owners == null)
+                {
+                    signature *= 31;
+                    continue;
+                }
+
+                foreach (NPCName owner in plot.owners.OrderBy(value => (int)value))
+                {
+                    signature = signature * 31 + (int)owner;
+                }
+            }
+
+            return signature;
+        }
+    }
+
+    private void ClearOverlay()
+    {
+        _labels.Clear();
+        if (_root != null)
+        {
+            _root.SetActive(false);
+            Destroy(_root);
+            _root = null;
+        }
+
+        _lastSignature = int.MinValue;
+    }
+
+    private void OnDisable()
+    {
+        // Also runs when the player is replaced on save/scene load. No global
+        // subscriptions or OnDestroy/unpatch callbacks depend on this object.
+        ClearOverlay();
+        if (_lineMaterial != null)
+        {
+            Destroy(_lineMaterial);
+            _lineMaterial = null;
+        }
+        _refreshTimer = 0f;
     }
 }
 
@@ -958,6 +1283,8 @@ internal static class AddCheatButtonsPatch
 
     private static void Postfix()
     {
+        NpcPropertyOverlayLifecycle.EnsureForPlayer(Player.Instance);
+
         if (GenericListUI.Instance == null)
         {
             return;
@@ -996,6 +1323,19 @@ internal static class AddCheatButtonsPatch
             "Allow NPC Talk In Combat",
             Plugin.AllowNpcTalkInCombat
         );
+        AddToggle(
+            contentRoot,
+            "Show NPC Property Boundaries",
+            Plugin.ShowNpcPropertyBoundaries
+        );
+        AddAction(
+            contentRoot,
+            "View Whole World Tile",
+            WorldTileOverview.Toggle,
+            WorldTileOverview.IsActive
+                ? "<color=#70e070>ON</color>"
+                : "<color=#e07070>OFF</color>"
+        );
         AddAction(
             contentRoot,
             "Force NPC Daily Reset",
@@ -1005,6 +1345,11 @@ internal static class AddCheatButtonsPatch
             contentRoot,
             "Duplicate Inventory Item",
             StartDuplicateInventoryItem
+        );
+        AddAction(
+            contentRoot,
+            "Teleport NPC To Player",
+            NpcTeleportDebug.ShowPicker
         );
         AddCloseButton(contentRoot);
     }
@@ -1043,16 +1388,17 @@ internal static class AddCheatButtonsPatch
     private static void AddAction(
         GameObject contentRoot,
         string name,
-        Action callback)
+        Action callback,
+        string suffix = "")
     {
         var item = new ListUIItem_Generic(
             name,
             null,
-            "",
+            suffix,
             delegate
             {
-                callback();
                 GenericListUI.Instance.Close();
+                callback();
             }
         );
 
@@ -1145,7 +1491,7 @@ internal static class AddCheatButtonsPatch
         );
     }
 
-    private static void AddCloseButton(GameObject contentRoot)
+    internal static void AddCloseButton(GameObject contentRoot)
     {
         if (CloseButton != null)
         {
