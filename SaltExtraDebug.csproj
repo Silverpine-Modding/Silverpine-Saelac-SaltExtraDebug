@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>SaltExtraDebug</AssemblyName>
     <Product>SaltExtraDebug</Product>
-    <Version>0.25.0</Version>
+    <Version>0.25.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>

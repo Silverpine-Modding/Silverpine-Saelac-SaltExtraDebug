@@ -42,9 +42,15 @@ Inventory Item opens a single-item player-inventory picker and creates a deep
 copy that preserves the selected item's serialized quality, durability,
 enchantments, and other instance data.
 
-Show NPC Property Boundaries draws each NPC-owned plot in the world with a
-stable color per NPC and a matching owner label. Shared properties receive
-separate inset outlines, and the overlay updates as plots or owners change.
+Show NPC Property Boundaries combines touching/overlapping plots belonging to
+the same NPC into one outline and one owner label per connected property, with
+a stable color per NPC. Internal strip lines are removed without filling gaps,
+courtyards, or irregular corners. Disconnected areas (including corner-only
+contacts) stay separate. Shared footprints receive inset colored outlines and
+stacked owner labels. The overlay updates as plots or owners change; geometry
+is cached between changes rather than recomputed every frame.
+This is display-only: it does not merge the game's actual Plot objects or alter
+ownership/build permissions, and it has no dependency on NamedNPCProperty.
 The overlay is created on the gameplay player, not the temporary BepInEx
 startup host, and is recreated for a replacement player after loading a save.
 Its outlines and labels remain fixed to world coordinates as the player moves.

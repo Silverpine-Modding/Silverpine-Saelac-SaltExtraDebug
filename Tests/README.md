@@ -18,6 +18,13 @@ fake hosts, covering bootstrap independence, duplicate prevention, recovery,
 and replacement players. They do not validate Harmony
 installation, real save-file compatibility, landing collisions, or UI rendering.
 
+The same harness compiles the production property-union geometry helper without
+Unity. It checks exact directed boundary edges, connected components/labels,
+irregular outlines, overlapping/duplicate plots, holes, shared-footprint insets,
+empty plots, negative/large coordinates, all 512 possible 3x3 tile arrangements,
+and 300 deterministic randomized rectangle sets. This is 821 exact-union
+scenarios, plus targeted compression/inset checks; it does not render Unity UI.
+
 The camera suite compiles the production overview and view-math files with a
 small engine model. It checks whole-tile fitting, portrait/landscape resizing,
 screen-size label math, snapshot restoration, pixel-perfect suspension,
@@ -46,3 +53,8 @@ In-game smoke test:
 8. Repeat with Toggle FOV already ON, resize the window, change world tiles,
    and try a dungeon. Try Spectate NPC while overview is active, then load a
    save. Neither path should leave a stuck zoom or detached camera.
+9. Check an NPC property made of horizontal strips: it should show one outline
+   and one name, including around any stepped corners. Courtyard holes should
+   retain their inner border; separate islands should each have a label. Check
+   a shared property for the different NPC colors and stacked labels. Change
+   property ownership/extent and confirm the overlay updates without reloading.

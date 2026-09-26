@@ -17,7 +17,7 @@ public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "salt.silverpine.extradebug";
     public const string PluginName = "Salt Extra Debug";
-    public const string PluginVersion = "0.25.0";
+    public const string PluginVersion = "0.25.1";
 
     internal static ConfigEntry<bool> FreeBuildEnabled;
     internal static ConfigEntry<bool> GodModeEnabled;
@@ -182,55 +182,56 @@ internal sealed class NpcPropertyBoundaryOverlay : MonoBehaviour
         // coordinates. Parenting labels to Player would move/scale the plots
         // whenever the player walks or a sprite-scaling mod changes their size.
 
-        foreach (Plot plot in plots
-            .OrderBy(value => value.bounds.xMin)
-            .ThenBy(value => value.bounds.yMin))
+        var ownerPlots = new Dictionary<NPCName, List<NpcPropertyGeometry.Rectangle>>();
+        foreach (Plot plot in plots)
         {
-            if (plot.owners == null)
+            if (plot.owners == null || plot.bounds.size.x <= 0 || plot.bounds.size.y <= 0)
             {
                 continue;
             }
 
-            List<NPCName> owners = plot.owners
+            foreach (NPCName owner in plot.owners
                 .Where(owner => owner != NPCName.None)
-                .Distinct()
-                .OrderBy(owner => (int)owner)
-                .ToList();
-
-            for (int index = 0; index < owners.Count; index++)
+                .Distinct())
             {
-                NPCName owner = owners[index];
-                Color color = GetOwnerColor(owner);
-                AddBoundary(plot.bounds, owner, color, index);
-                AddOwnerLabel(plot.bounds, owner, color, index);
+                if (!ownerPlots.TryGetValue(owner, out var rectangles))
+                {
+                    rectangles = new List<NpcPropertyGeometry.Rectangle>();
+                    ownerPlots.Add(owner, rectangles);
+                }
+                rectangles.Add(new NpcPropertyGeometry.Rectangle(
+                    plot.bounds.xMin, plot.bounds.yMin, plot.bounds.xMax, plot.bounds.yMax));
+            }
+        }
+
+        // Union each NPC's full footprint, even where exclusive and shared
+        // plots meet. Matching anchors stack shared labels and inset outlines.
+        var labelSlots = new Dictionary<NpcPropertyGeometry.Point, int>();
+        foreach (var entry in ownerPlots.OrderBy(value => (int)value.Key))
+        {
+            NPCName owner = entry.Key;
+            Color color = GetOwnerColor(owner);
+            foreach (NpcPropertyGeometry.Region region in NpcPropertyGeometry.Build(entry.Value))
+            {
+                labelSlots.TryGetValue(region.LabelAnchor, out int index);
+                labelSlots[region.LabelAnchor] = index + 1;
+                foreach (NpcPropertyGeometry.Point[] contour in region.Contours)
+                {
+                    AddBoundary(contour, owner, color, index);
+                }
+                AddOwnerLabel(region.LabelAnchor, owner, color, index);
             }
         }
     }
 
     private void AddBoundary(
-        BoundsInt bounds,
+        NpcPropertyGeometry.Point[] contour,
         NPCName owner,
         Color color,
         int sharedOwnerIndex)
     {
-        if (bounds.size.x <= 0 || bounds.size.y <= 0)
-        {
-            return;
-        }
-
-        float maximumInset = Mathf.Max(
-            0f,
-            Mathf.Min(bounds.size.x, bounds.size.y) * 0.5f - 0.1f
-        );
-        float inset = Mathf.Min(
-            sharedOwnerIndex * SharedOwnerInset,
-            maximumInset
-        );
-
-        float left = bounds.xMin - 0.5f + inset;
-        float right = bounds.xMax - 0.5f - inset;
-        float bottom = bounds.yMin - 0.5f + inset;
-        float top = bounds.yMax - 0.5f - inset;
+        // Keep even a one-tile-wide neck open for shared-owner outlines.
+        float inset = Mathf.Min(sharedOwnerIndex * SharedOwnerInset, 0.35f);
         const float z = -0.15f;
 
         var lineObject = new GameObject(
@@ -243,7 +244,7 @@ internal sealed class NpcPropertyBoundaryOverlay : MonoBehaviour
         LineRenderer line = lineObject.GetComponent<LineRenderer>();
         line.useWorldSpace = true;
         line.loop = true;
-        line.positionCount = 4;
+        line.positionCount = contour.Length;
         line.startWidth = LineWidth;
         line.endWidth = LineWidth;
         line.startColor = color;
@@ -259,14 +260,15 @@ internal sealed class NpcPropertyBoundaryOverlay : MonoBehaviour
             line.sharedMaterial = material;
         }
 
-        line.SetPosition(0, new Vector3(left, bottom, z));
-        line.SetPosition(1, new Vector3(right, bottom, z));
-        line.SetPosition(2, new Vector3(right, top, z));
-        line.SetPosition(3, new Vector3(left, top, z));
+        for (int i = 0; i < contour.Length; i++)
+        {
+            var point = NpcPropertyGeometry.InsetCorner(contour, i, inset);
+            line.SetPosition(i, new Vector3(point.X - 0.5f, point.Y - 0.5f, z));
+        }
     }
 
     private void AddOwnerLabel(
-        BoundsInt bounds,
+        NpcPropertyGeometry.Point anchor,
         NPCName owner,
         Color color,
         int sharedOwnerIndex)
@@ -278,8 +280,8 @@ internal sealed class NpcPropertyBoundaryOverlay : MonoBehaviour
         labelObject.hideFlags = HideFlags.DontSave;
         labelObject.transform.SetParent(_root.transform, false);
         labelObject.transform.position = new Vector3(
-            bounds.xMin - 0.45f,
-            bounds.yMax - 0.35f,
+            anchor.X - 0.45f,
+            anchor.Y - 0.35f,
             -0.16f
         );
 

@@ -8,6 +8,7 @@
     <Compile Remove="Camera\**\*.cs" />
     <Compile Include="..\NpcTeleportRoutine.cs" Link="NpcTeleportRoutine.cs" />
     <Compile Include="..\NpcPropertyOverlayLifecycle.cs" Link="NpcPropertyOverlayLifecycle.cs" />
+    <Compile Include="..\NpcPropertyGeometry.cs" Link="NpcPropertyGeometry.cs" />
     <Compile Include="..\..\..\export\AssetRipper_export_20260722_191903\Scripts\Assembly-CSharp\RoutineArgument.cs" Link="Game\RoutineArgument.cs" />
     <Compile Include="..\..\..\export\AssetRipper_export_20260722_191903\Scripts\Assembly-CSharp\RoutineArgument_EndOverrideIf_AfterTurns.cs" Link="Game\RoutineArgument_EndOverrideIf_AfterTurns.cs" />
   </ItemGroup>

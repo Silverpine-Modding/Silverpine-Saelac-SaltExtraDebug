@@ -20,6 +20,7 @@ internal static class RoutineTests
         PatchesOnlyAffectWaitingNpc();
         Console.WriteLine($"PASS: {assertions} teleport-routine assertions.");
         OverlayLifecycleTests.Run();
+        PropertyGeometryTests.Run();
     }
 
     private static void RestoresOriginalAfterExactlyThreeTurns()

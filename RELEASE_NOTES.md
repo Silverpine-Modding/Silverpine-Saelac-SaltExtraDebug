@@ -1,3 +1,21 @@
+## SaltExtraDebug v0.25.1
+
+### Property overlay correction
+
+- Merge each NPC's touching/overlapping plot rectangles into a combined outline with one label per connected property, removing the horizontal strip lines and repeated names.
+- Preserve irregular edges, courtyards/holes, disconnected properties, and per-NPC colors. Shared footprints retain inset outlines and stacked labels.
+- Cache the merged geometry until the plot signature changes. No changes to actual ownership, native plot objects, or mod dependencies.
+
+### Validation
+
+Release build completed with zero warnings/errors. Passed 821 exact-union
+geometry scenarios (47,966 assertions), including every 3x3 tile arrangement,
+random overlapping rectangles, negative/large coordinates, shared footprints,
+holes, and corner-only contacts. All 97 existing routine/lifecycle/camera
+regression assertions also passed. In-game visual confirmation is still needed.
+
+Use the installation instructions below to replace the DLL with the game closed.
+
 ## SaltExtraDebug v0.25.0
 
 ### New since v0.22.0
