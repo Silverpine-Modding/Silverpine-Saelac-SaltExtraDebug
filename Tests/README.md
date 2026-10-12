@@ -32,6 +32,25 @@ visibility scope, repeat toggles, save-load cleanup, camera-target changes,
 and replacement players. Actual rendering and Unity destroyed-object behavior
 still require the in-game smoke tests below.
 
+## Native custom-item migration checks
+
+With the game closed, build and test against a backed-up legacy generator DLL:
+
+```powershell
+& 'Plugin Development\SaltExtraDebug\Tests\Items\Run-Checks.ps1' -LegacyDll '<path-to-backed-up-CustomItemFreezeFix.dll>'
+```
+
+The bundled test host embeds the game's own Mono runtime. One process writes
+fixtures through the old plugin and native serializer; a fresh process loads
+only the new SaltExtraDebug components and the runtime resolver. It checks native
+component/full-item loading, all rarities, appearance, durability, enchantment,
+component references, item/component deep clones, other/late plugin types, and
+actual Harmony debug-action routing. It does not open or modify user saves.
+The prompt itself is intercepted for the routing check: this is not a rendered
+wizard test. Running Unity managed methods without the Unity engine can emit a
+`Component::get_gameObject` internal-call warning during Harmony setup; these
+checks do not execute that native call and still require a zero process exit.
+
 In-game smoke test:
 
 1. Press O, select **Teleport NPC To Player**, and choose an NPC. Check the
@@ -58,3 +77,8 @@ In-game smoke test:
    retain their inner border; separate islands should each have a label. Check
    a shared property for the different NPC colors and stacked labels. Change
    property ownership/extent and confirm the overlay updates without reloading.
+10. With the legacy generator and patcher both removed, press O and use Generate
+    Custom Item. Try different mechanics/appearance selections, every rarity,
+    an enchantment, a readable letter, and food expiration. Check existing custom
+    items. On a separate save, save/reload and duplicate a generated item; both
+    copies should retain their appearance, rarity, and mechanics.

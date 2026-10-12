@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Camera\**\*.cs" />
+    <Compile Remove="Items\**\*.cs" />
     <Compile Include="..\NpcTeleportRoutine.cs" Link="NpcTeleportRoutine.cs" />
     <Compile Include="..\NpcPropertyOverlayLifecycle.cs" Link="NpcPropertyOverlayLifecycle.cs" />
     <Compile Include="..\NpcPropertyGeometry.cs" Link="NpcPropertyGeometry.cs" />

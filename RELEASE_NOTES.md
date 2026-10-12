@@ -1,3 +1,24 @@
+## SaltExtraDebug v0.26.0
+
+### Integrated manual custom-item generator
+
+- Moved the manual item wizard and older enchantment-scroll compatibility repair into SaltExtraDebug. The native Generate Custom Item action now opens the integrated wizard.
+- Replaced the preloader's save-loading rewrite with a runtime type-resolution handler. Existing appearance/rarity component names and binary data are unchanged; other loaded plugins' serializable types remain discoverable.
+- No dependency on CustomItemFreezeFix, CustomItemPromptPatcher, CustomItemLoader, or ModdingTools. No generic-method serialization patches or OnDestroy cleanup.
+- Upgrading requires moving both CustomItemFreezeFix.dll and CustomItemPromptPatcher.dll outside the active BepInEx folders, with the game closed. Back up the pair before retiring them.
+
+### Validation
+
+The release build succeeded without warnings/errors. All 43 native Mono migration
+checks passed, reading component and full-item fixtures written by the backed-up legacy
+plugin in a separate process, preserving appearance, every rarity, durability,
+enchantment, component references, and deep cloning. They also verify other
+plugin types, late-loaded types, missing-type handling, and real debug-action
+Harmony routing without either legacy DLL loaded. Existing debug-mod regression
+tests also passed. In-game testing confirmed a generated item remained unchanged
+after saving, fully closing/reopening the game, and reloading. This confirms the
+tested item; it is not a claim that every wizard combination was manually tested.
+
 ## SaltExtraDebug v0.25.1
 
 ### Property overlay correction

@@ -17,7 +17,9 @@ public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "salt.silverpine.extradebug";
     public const string PluginName = "Salt Extra Debug";
-    public const string PluginVersion = "0.25.1";
+    public const string PluginVersion = "0.26.0";
+
+    internal static BepInEx.Logging.ManualLogSource Log;
 
     internal static ConfigEntry<bool> FreeBuildEnabled;
     internal static ConfigEntry<bool> GodModeEnabled;
@@ -32,6 +34,8 @@ public class Plugin : BaseUnityPlugin
 
     private void Awake()
     {
+        Log = Logger;
+        CustomItemTypeResolution.Install();
         FreeBuildEnabled = Config.Bind(
             "Free Build",
             "Enabled",

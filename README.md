@@ -25,6 +25,7 @@ Open the normal Silverpine debug options and use:
 - Force NPC Daily Reset
 - Duplicate Inventory Item
 - Teleport NPC To Player
+- Generate Custom Item (manual wizard)
 
 The indented options are controlled by the Free Build master switch. Settings
 are saved in `BepInEx/config/salt.silverpine.extradebug.cfg`.
@@ -79,6 +80,34 @@ and other impassable obstacles still prevent landing.
 
 The wait timer and previous routines use the game's own save format. This
 feature has no dependency on the Acacia or follower plugins.
+
+## Manual custom-item generator
+
+As of v0.26.0, the native **Generate Custom Item** debug action opens the manual
+wizard directly from SaltExtraDebug. Choose a name, category, base gameplay item,
+independent appearance, description, rarity, and (where applicable) enchantment,
+letter sender/content, and food expiration. This performs no inference/API calls.
+The compatibility repair for older generated enchantment scrolls is included.
+
+Existing generated items keep the same serialized component names and data.
+A static runtime type-resolution handler lets the native game serializer find
+components in loaded plugin assemblies. It survives destruction of the temporary
+BepInEx startup host; no OnDestroy callback, generic serializer patch, or separate
+preloader patcher is used. ModdingTools and CustomItemLoader are not required.
+The separate CustomItemLoader pack editor is not part of this migration.
+
+### Upgrading from the separate generator
+
+Close the game and back up the old DLLs. Replace SaltExtraDebug.dll, then move
+both of these legacy files outside BepInEx's active plugin/patcher folders:
+
+- `BepInEx/plugins/CustomItemFreezeFix.dll`
+- `BepInEx/patchers/CustomItemPromptPatcher.dll`
+
+Do not leave the old patcher installed: it still injects calls to the old plugin
+assembly. Keep the backed-up DLLs together if rolling back. Saves and settings
+do not need to be edited. Check existing items and test creation/save/reload on
+a separate save before continuing normal play.
 
 ## Build
 
