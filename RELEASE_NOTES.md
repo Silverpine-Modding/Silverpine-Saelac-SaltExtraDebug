@@ -1,3 +1,20 @@
+## SaltExtraDebug v0.26.1
+
+### Independent debug-menu scrolling
+
+- Remember each debug-list screen's own scroll position, including the main menu, Teleport NPC, Spectate NPC, nested native debug lists, and the manual custom-item wizard.
+- New screens start at the top. Returning to the main menu or toggling a cheat restores its own position instead of inheriting a submenu's scroll.
+- Restore after deferred row destruction and layout rebuilding, stop scroll inertia, and keep rapid close/reopen transitions from overwriting saved positions.
+- State belongs to the actual list UI and is not written to saves/config. Unrelated menus sharing GenericListUI are not given debug scroll positions.
+
+### Validation
+
+Release build completed with zero warnings/errors. Passed 116 targeted scroll-state
+and native Harmony-routing checks in the game's Mono runtime, covering all 15 native
+debug-list draw sites, independent positions, toggle redraws, rapid transitions,
+overscroll, and unrelated menus. The headless host cannot render Unity layouts;
+in-game scroll-position confirmation is still needed.
+
 ## SaltExtraDebug v0.26.0
 
 ### Integrated manual custom-item generator

@@ -65,7 +65,7 @@ internal static class NpcTeleportDebug
             DebugUI.Instance.ShowDebugOptions();
         }));
 
-        GenericListUI.Instance.Draw(items);
+        DebugMenuScreens.Draw(GenericListUI.Instance, items, "teleport-npc");
         GenericListUI.Instance.Open();
         GameObject contentRoot = Traverse.Create(GenericListUI.Instance)
             .Field("instanceRoot").GetValue<GameObject>();

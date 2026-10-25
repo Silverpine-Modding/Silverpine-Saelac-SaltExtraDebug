@@ -5,6 +5,12 @@ persistent runtime toggles for Free Build.
 
 ## Debug menu
 
+Each debug-list screen remembers its own scroll position while that UI is loaded.
+The main menu, Teleport NPC, Spectate NPC, other native debug lists, and custom-item
+wizard pickers no longer inherit each other's scrolling. New screens start at
+the top; closing/reopening a screen or changing a cheat toggle restores its
+previous position after the list rebuilds. Scroll positions are not saved to disk.
+
 Open the normal Silverpine debug options and use:
 
 - Free Build

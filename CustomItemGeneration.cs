@@ -74,7 +74,7 @@ namespace SilverpineMods.CustomItemFreezeFix
                     }))
                 .ToList();
 
-            GenericListUI.Instance.Draw(entries);
+            SaltExtraDebug.DebugMenuScreens.Draw(GenericListUI.Instance, entries, "custom-item:category");
             GenericListUI.Instance.Open();
         }
 
@@ -106,7 +106,7 @@ namespace SilverpineMods.CustomItemFreezeFix
                     }))
                 .ToList();
 
-            GenericListUI.Instance.Draw(entries);
+            SaltExtraDebug.DebugMenuScreens.Draw(GenericListUI.Instance, entries, "custom-item:base:" + category);
             GenericListUI.Instance.Open();
         }
 
@@ -142,7 +142,7 @@ namespace SilverpineMods.CustomItemFreezeFix
                     "Choose an inventory model category",
                     null));
 
-            GenericListUI.Instance.Draw(entries);
+            SaltExtraDebug.DebugMenuScreens.Draw(GenericListUI.Instance, entries, "custom-item:appearance-category");
             GenericListUI.Instance.Open();
         }
 
@@ -185,7 +185,7 @@ namespace SilverpineMods.CustomItemFreezeFix
                     $"{appearanceCategory} inventory models",
                     null));
 
-            GenericListUI.Instance.Draw(entries);
+            SaltExtraDebug.DebugMenuScreens.Draw(GenericListUI.Instance, entries, "custom-item:appearance:" + appearanceCategory);
             GenericListUI.Instance.Open();
         }
 
@@ -228,7 +228,7 @@ namespace SilverpineMods.CustomItemFreezeFix
                     }))
                 .ToList();
 
-            GenericListUI.Instance.Draw(entries);
+            SaltExtraDebug.DebugMenuScreens.Draw(GenericListUI.Instance, entries, "custom-item:quality");
             GenericListUI.Instance.Open();
         }
 
@@ -305,7 +305,7 @@ namespace SilverpineMods.CustomItemFreezeFix
                                 null));
                     }));
 
-            GenericListUI.Instance.Draw(entries);
+            SaltExtraDebug.DebugMenuScreens.Draw(GenericListUI.Instance, entries, "custom-item:enchantment");
             GenericListUI.Instance.Open();
         }
 
