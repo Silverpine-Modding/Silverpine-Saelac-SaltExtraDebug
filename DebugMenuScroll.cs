@@ -94,6 +94,12 @@ internal static class DebugMenuScrollDrawPatch
         // must neither overwrite a debug screen nor receive a delayed restore.
         if (memory != null)
             memory.Begin(DebugMenuScreens.DrawingScreen, ___instanceRoot);
+
+        DebugMenuInput input = __instance.GetComponent<DebugMenuInput>();
+        if (input == null && DebugMenuScreens.DrawingScreen != null)
+            input = __instance.gameObject.AddComponent<DebugMenuInput>();
+        if (input != null)
+            input.SetScreen(DebugMenuScreens.DrawingScreen != null);
     }
 }
 

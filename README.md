@@ -11,6 +11,13 @@ wizard pickers no longer inherit each other's scrolling. New screens start at
 the top; closing/reopening a screen or changing a cheat toggle restores its
 previous position after the list rebuilds. Scroll positions are not saved to disk.
 
+Debug lists are modal: world clicks, movement/hotkeys, and prefab placement input
+are blocked while the main menu or a debug submenu is open. An invisible backdrop
+intercepts clicks on UI underneath; the list, scrollbar, and X remain usable.
+The closing click (including its release) cannot activate an object behind the
+menu. Use X or the configured close-menu key to dismiss a list. These protections
+do not change the game's input-lock counter or block the selected debug action.
+
 Open the normal Silverpine debug options and use:
 
 - Free Build

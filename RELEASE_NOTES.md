@@ -1,3 +1,23 @@
+## SaltExtraDebug v0.26.2
+
+### Debug-menu click-through protection
+
+- Block right-click world interactions, left-click targeting/pickup, player movement/hotkeys, and prefab placement input while the main debug menu or a debug-list submenu is open.
+- Add a transparent raycast backdrop behind the menu to intercept covered UI clicks without changing the menu's anchors or scroll layout.
+- Consume the closing gesture through its mouse-release frame, so selecting an option or clicking X cannot also act on the world behind the menu.
+- Pause existing placement coroutines during menus and resume them afterward. Selected debug actions still run, and the next fresh world click works normally.
+- Support the configured close-menu key. Keep protections on the real UI object, without changing Player's input-lock counter or adding OnDestroy cleanup.
+
+### Validation
+
+Release build completed with zero warnings/errors. All 170 targeted menu checks
+passed in the game's Mono runtime, including 54 new input-protection checks for
+close/release timing, held-button chords, UI replacement, native targeting/pickup
+suppression, unchanged input-lock counts, and placement coroutine suspension/resume.
+The other 116 checks cover scroll memory and routing of all 15 native debug lists.
+The headless host cannot render Unity UI; in-game menu/raycast confirmation remains
+necessary.
+
 ## SaltExtraDebug v0.26.1
 
 ### Independent debug-menu scrolling

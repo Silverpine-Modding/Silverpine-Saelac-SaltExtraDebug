@@ -21,7 +21,8 @@ internal static class Program
         {
             CheckState();
             CheckNativeRouting();
-            Console.WriteLine($"PASS: {checks} scroll-state and native menu-routing checks (Unity layout still needs in-game verification).");
+            checks += InputProtectionChecks.Run();
+            Console.WriteLine($"PASS: {checks} scroll/input-state and native routing checks (Unity layout/raycast behavior still needs in-game verification).");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
