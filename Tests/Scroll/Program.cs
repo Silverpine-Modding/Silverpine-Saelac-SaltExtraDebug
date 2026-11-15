@@ -22,82 +22,14 @@ internal static class Program
             CheckState();
             CheckNativeRouting();
             checks += InputProtectionChecks.Run();
-            Console.WriteLine($"PASS: {checks} scroll/input-state and native routing checks (Unity layout/raycast behavior still needs in-game verification).");
+            checks += TargetingClickChecks.Run();
+            Console.WriteLine($"PASS: {checks} page-layout/input-state and native routing checks (Unity rendering/raycast behavior still needs in-game verification).");
             return 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
     }
 
-    private static void CheckState()
-    {
-        var state = new DebugMenuScrollState();
-        state.Begin("main", 0f);
-        Equal(1f, state.Position, "New main menu starts at top, not previous panel bottom.");
-        Check(state.RestorePending, "Wait for layout before capturing.");
-        state.Restored();
-        state.Suspend(0.35f);
-        state.Suspend(0f); // Close prefix followed by OnDisable.
-        Equal(0.35f, state.Position, "Duplicate close does not overwrite the capture.");
-        state.Begin("teleport", 0f);
-        Equal(1f, state.Position, "New teleport menu starts at top.");
-        state.Restored();
-        state.Suspend(0.1f);
-        state.Begin("main", 0.1f);
-        Equal(0.35f, state.Position, "Main does not inherit teleport position.");
-        state.Restored();
-        state.Begin("spectate", 0.5f); // Draw without Close also saves outgoing.
-        Equal(1f, state.Position, "Spectate is independent of main and teleport.");
-        state.Restored();
-        state.Suspend(0.2f);
-        state.Begin("teleport", 0.2f);
-        Equal(0.1f, state.Position, "Teleport remembers its own location.");
-        state.Restored();
-        state.Begin("spectate", 0.15f);
-        Equal(0.2f, state.Position, "Spectate remembers its own location.");
-        state.Suspend(0f); // Close before layout restoration.
-        state.Begin("main", 0f);
-        Equal(0.5f, state.Position, "Rapid switching preserves main's last real location.");
-        state.Restored();
-        state.Suspend(0.48f);
-        state.Begin("main", 0f); // Toggle redraws the same screen.
-        Equal(0.48f, state.Position, "Cheat-toggle rebuild preserves main position.");
-        state.Restored();
-        state.Begin(null, 0.6f);
-        Check(state.Screen == null && !state.RestorePending, "Unrelated Draw detaches tracking and cancels restore.");
-        state.Save(0f);
-        state.Suspend(0f);
-        Check(!state.RestorePending, "Unrelated menu must not get a pending restore on close.");
-        state.Begin("main", 0f);
-        Equal(0.6f, state.Position, "Unrelated menus cannot overwrite main.");
-        state.Begin(null, 0f);
-        state.Begin("main", 0f);
-        Equal(0.6f, state.Position, "Unrelated Draw during pending restoration preserves memory.");
-        state.Restored();
-        state.Save(float.NaN);
-        state.Save(float.PositiveInfinity);
-        state.Save(float.NegativeInfinity);
-        Equal(0.6f, state.Position, "Invalid positions cannot poison memory.");
-        state.Save(-0.3f);
-        Equal(0f, state.Position, "Bottom overscroll is clamped.");
-        state.Save(1.5f);
-        Equal(1f, state.Position, "Top overscroll is clamped.");
-        state.Suspend(0.4f);
-        state.RequestRestore(); // Close/Open without Draw.
-        Equal(0.4f, state.Position, "Reopening unchanged rows restores location.");
-        state.Restored();
-        Check(!state.RestorePending, "Restoration completes once.");
-
-        foreach (string screen in new[] { "custom-item:base:Food", "custom-item:base:Weapon",
-            "custom-item:appearance:Food", "custom-item:quality", "custom-item:enchantment" })
-        {
-            state.Begin(screen, 0.4f);
-            Equal(1f, state.Position, "Wizard screen starts independently: " + screen);
-            state.Restored();
-        }
-        var replacement = new DebugMenuScrollState();
-        replacement.Begin("main", 0f);
-        Equal(1f, replacement.Position, "Replacement UI gets clean session state.");
-    }
+    private static void CheckState() => checks += PageLayoutChecks.Run();
 
     private static void CheckNativeRouting()
     {
@@ -148,7 +80,7 @@ internal static class Program
 
         var harmony = new Harmony("saltextradebug.tests.scroll");
         // Validate the real Harmony patches can all be installed on Unity Mono.
-        foreach (string name in new[] { "DebugMenuScrollDrawPatch", "DebugMenuScrollClosePatch", "NativeDebugMenuScreenPatch" })
+        foreach (string name in new[] { "DebugMenuDrawPatch", "NativeDebugMenuScreenPatch" })
         {
             var patched = harmony.CreateClassProcessor(plugin.GetType("SaltExtraDebug." + name, true)).Patch();
             Check(patched.Count > 0, "Harmony installed " + name);

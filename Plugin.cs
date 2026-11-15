@@ -17,7 +17,7 @@ public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "salt.silverpine.extradebug";
     public const string PluginName = "Salt Extra Debug";
-    public const string PluginVersion = "0.26.2";
+    public const string PluginVersion = "0.27.0";
 
     internal static BepInEx.Logging.ManualLogSource Log;
 
@@ -1285,8 +1285,6 @@ internal static class PlacementZoneNamePatch
 [HarmonyPatch(typeof(DebugUI), nameof(DebugUI.ShowDebugOptions))]
 internal static class AddCheatButtonsPatch
 {
-    internal static GameObject CloseButton;
-
     private static void Postfix()
     {
         NpcPropertyOverlayLifecycle.EnsureForPlayer(Player.Instance);
@@ -1499,71 +1497,7 @@ internal static class AddCheatButtonsPatch
 
     internal static void AddCloseButton(GameObject contentRoot)
     {
-        if (CloseButton != null)
-        {
-            UnityEngine.Object.DestroyImmediate(CloseButton);
-        }
-
-        var closeObject = new GameObject(
-            "SaltExtraDebug_CloseButton",
-            typeof(RectTransform),
-            typeof(CanvasRenderer),
-            typeof(Image),
-            typeof(Button)
-        );
-        CloseButton = closeObject;
-
-        // instanceRoot is the scrolling content. Its parent is the fixed-size
-        // viewport that forms the visible debug window.
-        closeObject.transform.SetParent(contentRoot.transform.parent, false);
-        closeObject.transform.SetAsLastSibling();
-
-        RectTransform rect = closeObject.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(1f, 1f);
-        rect.anchorMax = new Vector2(1f, 1f);
-        rect.pivot = new Vector2(1f, 1f);
-        rect.anchoredPosition = new Vector2(-8f, -8f);
-        rect.sizeDelta = new Vector2(44f, 44f);
-
-        Image background = closeObject.GetComponent<Image>();
-        background.color = new Color(0.12f, 0.12f, 0.12f, 0.9f);
-
-        var textObject = new GameObject(
-            "Label",
-            typeof(RectTransform),
-            typeof(CanvasRenderer),
-            typeof(TextMeshProUGUI)
-        );
-        textObject.transform.SetParent(closeObject.transform, false);
-
-        RectTransform textRect = textObject.GetComponent<RectTransform>();
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
-
-        TextMeshProUGUI label = textObject.GetComponent<TextMeshProUGUI>();
-        label.text = "X";
-        label.fontSize = 26f;
-        label.alignment = TextAlignmentOptions.Center;
-        label.color = Color.white;
-
-        TextMeshProUGUI existingText =
-            contentRoot.GetComponentInChildren<TextMeshProUGUI>();
-        if (existingText != null)
-        {
-            label.font = existingText.font;
-        }
-
-        closeObject.GetComponent<Button>().onClick.AddListener(delegate
-        {
-            GenericListUI.Instance.Close();
-            if (CloseButton != null)
-            {
-                UnityEngine.Object.Destroy(CloseButton);
-                CloseButton = null;
-            }
-        });
+        contentRoot.GetComponentInParent<DebugMenuPages>(true)?.RefreshCloseButton();
     }
 }
 

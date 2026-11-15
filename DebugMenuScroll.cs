@@ -22,95 +22,24 @@ internal static class DebugMenuScreens
     }
 }
 
-// Lives on the actual list UI, not BepInEx's temporary startup host.
-[DefaultExecutionOrder(10000)]
-internal sealed class DebugMenuScroll : MonoBehaviour
-{
-    private readonly DebugMenuScrollState _state = new();
-    private ScrollRect _scroll;
-    private int _drawFrame;
-
-    internal void Begin(string screen, GameObject contentRoot)
-    {
-        if (_scroll == null && contentRoot != null)
-            _scroll = contentRoot.GetComponentInParent<ScrollRect>(true);
-
-        _state.Begin(screen, ReadPosition());
-        if (screen != null && _scroll != null)
-            _scroll.StopMovement();
-        ScheduleRestore();
-    }
-
-    internal void Suspend() => _state.Suspend(ReadPosition());
-
-    internal void ScheduleRestore()
-    {
-        _state.RequestRestore();
-        _drawFrame = Time.frameCount;
-    }
-
-    private float ReadPosition()
-    {
-        if (_scroll == null || _scroll.content == null)
-            return 1f;
-        RectTransform viewport = _scroll.viewport != null ? _scroll.viewport : (RectTransform)_scroll.transform;
-        return _scroll.content.rect.height <= viewport.rect.height ? 1f : _scroll.verticalNormalizedPosition;
-    }
-
-    private void OnEnable() => ScheduleRestore();
-
-    // Covers X, action selections, significant player actions, and direct hiding.
-    private void OnDisable() => Suspend();
-
-    private void LateUpdate()
-    {
-        if (!_state.RestorePending || _scroll == null || !_scroll.isActiveAndEnabled
-            || Time.frameCount <= _drawFrame)
-            return;
-
-        // Draw destroys old rows at the end of the frame. The next frame also
-        // includes appended cheat buttons and other postfix-added rows.
-        _scroll.StopMovement();
-        Canvas.ForceUpdateCanvases();
-        if (_scroll.content != null)
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_scroll.content);
-        Canvas.ForceUpdateCanvases();
-        _scroll.verticalNormalizedPosition = _state.Position;
-        _scroll.StopMovement();
-        _state.Restored();
-    }
-}
-
 [HarmonyPatch(typeof(GenericListUI), nameof(GenericListUI.Draw))]
-internal static class DebugMenuScrollDrawPatch
+internal static class DebugMenuDrawPatch
 {
     private static void Prefix(GenericListUI __instance, GameObject ___instanceRoot)
     {
-        DebugMenuScroll memory = __instance.GetComponent<DebugMenuScroll>();
-        if (memory == null && DebugMenuScreens.DrawingScreen != null)
-            memory = __instance.gameObject.AddComponent<DebugMenuScroll>();
+        DebugMenuPages pages = __instance.GetComponent<DebugMenuPages>();
+        if (pages == null && DebugMenuScreens.DrawingScreen != null)
+            pages = __instance.gameObject.AddComponent<DebugMenuPages>();
 
-        // An unrelated menu using GenericListUI detaches tracking. Its scrolling
-        // must neither overwrite a debug screen nor receive a delayed restore.
-        if (memory != null)
-            memory.Begin(DebugMenuScreens.DrawingScreen, ___instanceRoot);
+        // Restore the native hierarchy/layout before any non-debug Draw.
+        if (pages != null)
+            pages.Begin(DebugMenuScreens.DrawingScreen, ___instanceRoot);
 
         DebugMenuInput input = __instance.GetComponent<DebugMenuInput>();
         if (input == null && DebugMenuScreens.DrawingScreen != null)
             input = __instance.gameObject.AddComponent<DebugMenuInput>();
         if (input != null)
             input.SetScreen(DebugMenuScreens.DrawingScreen != null);
-    }
-}
-
-[HarmonyPatch(typeof(GenericListUI), nameof(GenericListUI.Close))]
-internal static class DebugMenuScrollClosePatch
-{
-    private static void Prefix(GenericListUI __instance)
-    {
-        DebugMenuScroll memory = __instance.GetComponent<DebugMenuScroll>();
-        if (memory != null)
-            memory.Suspend();
     }
 }
 

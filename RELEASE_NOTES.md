@@ -1,3 +1,38 @@
+## SaltExtraDebug v0.27.0
+
+### Paginated, text-aware debug menus
+
+- Enlarge the debug window within the canvas bounds and lay out buttons in up to three aligned columns. Long labels wrap or span columns; ON/OFF and other suffixes have separate measured space.
+- Replace the debug scrollbar with Previous/Next controls and a page counter. Preserve row order and each screen's own position across reopening, toggle redraws, and resolution changes.
+- Apply to the main menu, all 15 native debug-list draw sites, teleport picker, and custom-item wizard lists. Restore the original layout before unrelated uses of GenericListUI.
+- Clone the inventory selection menu's native blue-grey X, including its font and button styling. Clear inventory callbacks and anchor it to the debug window header on every screen.
+- Preserve existing world-input protection, action callbacks, and deconstruction targeting fix. No new dependencies or OnDestroy lifecycle hooks.
+
+### Validation
+
+Release build completed without warnings/errors. Automated page geometry/state,
+native-routing, input-protection, and targeting checks passed, including 300
+randomized layouts. Text heights are modeled in headless tests and measured with
+TMP in the game. Actual Unity rendering and button placement require an in-game
+visual check.
+
+## SaltExtraDebug v0.26.3
+
+### Instant-deconstruction targeting fix
+
+- Capture the clicked target position before invoking its action. Player facing uses those saved coordinates instead of a crosshair that deconstruction may already have destroyed.
+- Detach the clicked crosshair and defer its cleanup until frame end, so Unity can finish its subsequent OnMouseUp event without a destroyed hit object. The target itself is still deconstructed immediately.
+- Preserve native target filtering, auto-selection, action/cleanup order, and menu click-through protection. Ignore duplicate marker callbacks and do not turn a replaced or missing player.
+
+### Validation
+
+Release build completed with zero warnings/errors. All 196 targeted checks passed
+in the game's Mono runtime, including 26 new targeting-lifetime checks and the
+existing 170 menu/input checks. Tests exercise real Harmony callback wiring and
+model immediate target destruction, delayed marker cleanup, and cached facing
+coordinates. Actual Unity mouse-event/destruction behavior still needs an in-game
+deconstruction check.
+
 ## SaltExtraDebug v0.26.2
 
 ### Debug-menu click-through protection

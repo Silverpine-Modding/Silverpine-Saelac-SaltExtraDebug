@@ -5,18 +5,32 @@ persistent runtime toggles for Free Build.
 
 ## Debug menu
 
-Each debug-list screen remembers its own scroll position while that UI is loaded.
-The main menu, Teleport NPC, Spectate NPC, other native debug lists, and custom-item
-wizard pickers no longer inherit each other's scrolling. New screens start at
-the top; closing/reopening a screen or changing a cheat toggle restores its
-previous position after the list rebuilds. Scroll positions are not saved to disk.
+Debug-list screens use a larger, screen-bounded window with up to three columns
+and Previous/Next pages instead of a scrollbar. Columns adapt to the available
+width and measured label lengths; long labels wrap or span columns, and suffixes
+such as ON/OFF have their own reserved space. Very narrow windows use one column.
+The X is cloned from the inventory selection menu's native blue-grey close button,
+but closes only the debug window. It stays in the window's top-right header on
+every page and submenu.
+
+Each screen remembers its own first visible entry while that UI is loaded. Main,
+Teleport NPC, Spectate NPC, other native debug lists, and custom-item wizard pickers
+do not inherit each other's pages. Reopening a screen or toggling a cheat restores
+its page after the list rebuilds. Resizing reflows the pages around the remembered
+entry. Page positions are not saved to disk. Non-debug lists retain their original
+hierarchy, size, scrolling, and layout.
 
 Debug lists are modal: world clicks, movement/hotkeys, and prefab placement input
 are blocked while the main menu or a debug submenu is open. An invisible backdrop
-intercepts clicks on UI underneath; the list, scrollbar, and X remain usable.
+intercepts clicks on UI underneath; the buttons, page controls, and X remain usable.
 The closing click (including its release) cannot activate an object behind the
 menu. Use X or the configured close-menu key to dismiss a list. These protections
 do not change the game's input-lock counter or block the selected debug action.
+
+Target selection captures the clicked position before invoking the action, so
+instant deconstruction can still turn the player without reading a destroyed
+crosshair. The clicked crosshair is detached and cleaned up at frame end, allowing
+Unity to finish its mouse-release events; the object is still deconstructed immediately.
 
 Open the normal Silverpine debug options and use:
 

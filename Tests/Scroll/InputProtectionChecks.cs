@@ -140,6 +140,7 @@ internal static class InputProtectionChecks
     }
 
     private static bool ReadTestGate(ref bool __result) { __result = blocked; return false; }
+    internal static void SetBlocked(bool value) => blocked = value;
     private static void Check(bool condition, string description)
     {
         if (!condition) throw new Exception(description);
