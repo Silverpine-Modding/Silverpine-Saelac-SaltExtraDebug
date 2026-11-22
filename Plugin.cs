@@ -17,7 +17,7 @@ public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "salt.silverpine.extradebug";
     public const string PluginName = "Salt Extra Debug";
-    public const string PluginVersion = "0.27.0";
+    public const string PluginVersion = "0.27.1";
 
     internal static BepInEx.Logging.ManualLogSource Log;
 

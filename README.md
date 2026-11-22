@@ -57,6 +57,11 @@ Open the normal Silverpine debug options and use:
 The indented options are controlled by the Free Build master switch. Settings
 are saved in `BepInEx/config/salt.silverpine.extradebug.cfg`.
 
+While Free Build is enabled, reading an editable sign offers Edit even outside
+player-owned property. Turning Free Build off restores the normal ownership
+restriction the next time a sign is opened. Property ownership, the native
+100-character limit, writing duration, and sign save data are unchanged.
+
 God Mode prevents positive damage to the player and continues to allow healing.
 Toggle Stat Changes prevents hunger and thirst from increasing and prevents
 sanity and rest from decreasing. Beneficial stat changes remain enabled.

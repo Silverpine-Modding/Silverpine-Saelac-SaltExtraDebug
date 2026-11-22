@@ -1,3 +1,18 @@
+## SaltExtraDebug v0.27.1
+
+### Free Build sign editing
+
+- While Free Build is on, show the native Edit option for editable signs on any property, including NPC-owned land.
+- Restore the native ownership restriction when Free Build is off. Only the permission decision in Sign.OnInteract is changed; property ownership, NPC writing, text validation, writing duration, and serialization are untouched.
+
+### Validation
+
+Release build completed without warnings/errors. All 20 targeted sign checks
+passed, covering the Free Build setting, owned/unowned signs, unchanged native
+instructions and callback wiring, and Harmony installation on the game's Mono
+runtime. Existing page/input/targeting checks also passed. The editor's actual
+in-game interaction still needs a manual check.
+
 ## SaltExtraDebug v0.27.0
 
 ### Paginated, text-aware debug menus

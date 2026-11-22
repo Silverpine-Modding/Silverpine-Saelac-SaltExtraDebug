@@ -23,6 +23,7 @@ internal static class Program
             CheckNativeRouting();
             checks += InputProtectionChecks.Run();
             checks += TargetingClickChecks.Run();
+            checks += FreeBuildSignChecks.Run();
             Console.WriteLine($"PASS: {checks} page-layout/input-state and native routing checks (Unity rendering/raycast behavior still needs in-game verification).");
             return 0;
         }
